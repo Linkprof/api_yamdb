@@ -1,7 +1,4 @@
-from django.contrib.auth import get_user_model
 from django.db import models
-
-User = get_user_model()
 
 
 class Categories(models.Model):
@@ -42,6 +39,7 @@ class Titles(models.Model):
     genre = models.ManyToManyField(Genres, related_name='titles',
                                    verbose_name='Жанр')
     category = models.ForeignKey(Categories, on_delete=models.SET_NULL,
+                                 null=True,
                                  related_name='titles',
                                  verbose_name='Категория')
 

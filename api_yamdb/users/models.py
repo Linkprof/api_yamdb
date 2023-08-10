@@ -3,10 +3,6 @@ from django.core.validators import RegexValidator
 from django.db import models
 
 
-USER = 'user'
-ADMIN = 'admin'
-MODERATOR = 'moderator'
-
 MAX_EMAIL_LENGTH = 254
 MAX_ROLE_LENGTH = 9
 MAX_NAME_LENGTH = 150
@@ -15,6 +11,10 @@ VALID_NAME = RegexValidator(r'^[\w.@+-]+\Z')
 
 class User(AbstractUser):
     """Переопределенная модель User"""
+
+    USER = 'user'
+    ADMIN = 'admin'
+    MODERATOR = 'moderator'
 
     ROLES = {
         (USER, 'user'),
@@ -61,3 +61,15 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+    @property
+    def is_user(self):
+        return self.role == self.USER
+
+    @property
+    def is_moderator(self):
+        return self.role == self.MODERATOR
+
+    @property
+    def is_admin(self):
+        return self.role == self.ADMIN
