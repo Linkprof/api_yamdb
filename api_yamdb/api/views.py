@@ -8,6 +8,13 @@ from rest_framework.response import Response
 from rest_framework import status, viewsets, filters
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework_simplejwt.tokens import AccessToken
+from django.shortcuts import get_object_or_404
+from rest_framework import filters, viewsets
+from rest_framework.pagination import LimitOffsetPagination
+
+from reviews.models import Categories, Genres, Titles
+from api.serializers import (CategoriesSerializer, GenresSerializer, TitlesSerializer)
+
 
 from api.permissions import IsAdmin
 from users.models import User, Reviews, Titles
@@ -95,7 +102,24 @@ def get_token(request):
     token = AccessToken.for_user(user)
     return Response(data={'token': str(token)}, status=status.HTTP_200_OK)
 
+class CategoriesViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Categories.objects.all()
+    serializer_class = CategoriesSerializer
+    filter_backends = (filters.SearchFilter, )
+    search_fields = ('name',)
 
+
+class GenresViewSet(viewsets.ModelViewSet):
+    queryset = Genres.objects.all()
+    serializer_class = GenresSerializer
+    filter_backends = (filters.SearchFilter, )
+    search_fields = ('name',)
+
+
+class TitlesViewSet(viewsets.ModelViewSet):
+    queryset = Titles.objects.all()
+    serializer_class = TitlesSerializer
+    
 class ReviewsViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewsSerializer
     permission_classes = ('''IsAdminModeratorOwnerOrReadOnly,''')
