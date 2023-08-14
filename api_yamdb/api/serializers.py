@@ -23,20 +23,19 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254, required=True)
-    username = serializers.RegexField(
-        regex=VALID_NAME, max_length=150, required=True
-    )
+    username = serializers.CharField(
+        required=True,
+        max_length=150,
+        validators=[VALID_NAME],)
 
     def validate_username(self, value):
         if value == 'me':
             raise serializers.ValidationError(
-                'Невозможно использовать имя "me" для регистрации.'
+                'Нельзя использовать имя "me" для регистрации.'
             )
         return value
 
 
-class CreateTokenSerializer(serializers.Serializer):
-    username = serializers.RegexField(
-        regex=VALID_NAME, max_length=150, required=True
-    )
-    confirmation_code = serializers.CharField(required=True)
+class VerificationSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    confirmation_code = serializers.CharField(max_length=250)
