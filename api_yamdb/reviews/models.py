@@ -36,7 +36,7 @@ class Titles(models.Model):
     year = models.IntegerField(verbose_name='Год выпуска')
     description = models.TextField(verbose_name='Описание')
     genre = models.ManyToManyField(Genres, related_name='titles', verbose_name='Жанр')
-    category = models.ForeignKey(Categories, on_delete=models.SET_NULL, related_name='titles', verbose_name='Категория')
+    category = models.ForeignKey(Categories, on_delete=models.SET_NULL, null=True, related_name='titles', verbose_name='Категория')
     
 
     class Meta:
