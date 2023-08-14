@@ -1,11 +1,15 @@
 from rest_framework import serializers
-from django.core.validators import MaxValueValidator, MinValueValidator, RegExValidator
-from django.shortcuts import get_object_or_404
+from django.core.validators import (
+    MaxValueValidator,
+    MinValueValidator,
+    RegexValidator)
+
 from users.models import User
 from reviews.models import Titles, Comments, Reviews
 from reviews.models import Categories, Genres, Titles
 
 VALID_NAME = RegexValidator(r'^[\w.@+-]+\Z')
+
 
 class CategoriesSerializer(serializers.ModelSerializer):
 
@@ -13,15 +17,20 @@ class CategoriesSerializer(serializers.ModelSerializer):
         model = Categories
         fields = '__all__'
 
+
 class GenresSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Genres
         fields = '__all__'
 
+
 class TitlesSerializer(serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(slug_field='slug', queryset=Categories.objects.all())
-    genre = serializers.SlugRelatedField(slug_field='slug', queryset=Genres.objects.all(), many=True)
+    category = serializers.SlugRelatedField(slug_field='slug',
+                                            queryset=Categories.objects.all())
+    genre = serializers.SlugRelatedField(slug_field='slug',
+                                         queryset=Genres.objects.all(),
+                                         many=True)
 
     class Meta:
         model = Titles
@@ -55,7 +64,8 @@ class RegistrationSerializer(serializers.Serializer):
                 'Нельзя использовать имя "me" для регистрации.'
             )
         return value
-      
+
+
 class CommentsSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True,
@@ -87,4 +97,3 @@ class ReviewsSerializer(serializers.ModelSerializer):
 class VerificationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     confirmation_code = serializers.CharField(max_length=250)
-

@@ -1,11 +1,8 @@
-
-from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.conf import settings
 
-
-User = get_user_model()
+from users.models import User
 
 
 class Categories(models.Model):
@@ -14,7 +11,6 @@ class Categories(models.Model):
     slug = models.SlugField(max_length=50, unique=True,
                             verbose_name='slug категории')
 
-
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
@@ -22,7 +18,7 @@ class Categories(models.Model):
     def __str__(self):
         return self.name
 
-      
+
 class Genres(models.Model):
     '''Категории жанров'''
     name = models.CharField(max_length=256, verbose_name='Hазвание жанра')

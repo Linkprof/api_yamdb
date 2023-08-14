@@ -10,14 +10,16 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework_simplejwt.tokens import AccessToken
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, viewsets
-from rest_framework.pagination import LimitOffsetPagination
 
 from reviews.models import Categories, Genres, Titles
-from api.serializers import (CategoriesSerializer, GenresSerializer, TitlesSerializer)
+from api.serializers import (CategoriesSerializer,
+                             GenresSerializer,
+                             TitlesSerializer)
 
 
 from api.permissions import IsAdmin
-from users.models import User, Reviews, Titles
+from users.models import User
+from reviews.models import Reviews, Titles
 from api.serializers import (
     RegistrationSerializer,
     UserSerializer,
