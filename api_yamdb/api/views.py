@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from reviews.models import Reviews, Titles
 
-from .serializers import CommentsSerializer, ReviewsSerializer
+from api.serializers import CommentsSerializer, ReviewsSerializer
 
 
 class ReviewsViewSet(viewsets.ModelViewSet):
@@ -31,13 +31,6 @@ class ReviewsViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         self.create_or_update(serializer)
 
-    def perform_update(self, serializer):
-        self.create_or_update(serializer)
-
-    def get_permissions(self):
-        if self.action == "retrieve":
-            return ('''ReadOnly(),''')
-        return super().get_permissions()
 
 
 class CommentsViewSet(viewsets.ModelViewSet):
@@ -58,7 +51,3 @@ class CommentsViewSet(viewsets.ModelViewSet):
         review = self.get_review()
         serializer.save(author=self.request.user, review=review)
 
-    def get_permissions(self):
-        if self.action == "retrieve":
-            return ('''ReadOnly(),''')
-        return super().get_permissions()
