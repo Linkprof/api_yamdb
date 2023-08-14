@@ -10,6 +10,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework_simplejwt.tokens import AccessToken
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, viewsets
+from statistics import mean
 
 from reviews.models import Categories, Genres, Titles
 from api.serializers import (CategoriesSerializer,
@@ -104,6 +105,7 @@ def get_token(request):
     token = AccessToken.for_user(user)
     return Response(data={'token': str(token)}, status=status.HTTP_200_OK)
 
+
 class CategoriesViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Categories.objects.all()
     serializer_class = CategoriesSerializer
@@ -121,7 +123,8 @@ class GenresViewSet(viewsets.ModelViewSet):
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Titles.objects.all()
     serializer_class = TitlesSerializer
-    
+
+
 class ReviewsViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewsSerializer
     permission_classes = ('''IsAdminModeratorOwnerOrReadOnly,''')
@@ -143,7 +146,6 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         self.create_or_update(serializer)
-
 
 
 class CommentsViewSet(viewsets.ModelViewSet):
