@@ -1,7 +1,9 @@
 from rest_framework import serializers
-from django.core.validators import RegexValidator
-
+from django.core.validators import MaxValueValidator, MinValueValidator, RegExValidator
+from django.shortcuts import get_object_or_404
 from users.models import User
+from reviews.models import Titles, Comments, Reviews
+
 
 
 VALID_NAME = RegexValidator(r'^[\w.@+-]+\Z')
@@ -34,8 +36,36 @@ class RegistrationSerializer(serializers.Serializer):
                 'Нельзя использовать имя "me" для регистрации.'
             )
         return value
+      
+class CommentsSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='username'
+    )
+
+    class Meta:
+        model = Comments
+        fields = ('id', 'text', 'author', 'pub_date')
+
+
+class ReviewsSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='username'
+    )
+    score = serializers.IntegerField(
+        validators=(
+            MinValueValidator(1, 'Оценка не может быть меньше 1.'),
+            MaxValueValidator(10, 'Оценка не может быть выше 10.')
+        )
+    )
+
+    class Meta:
+        model = Reviews
+        fields = ('id', 'author', 'text', 'score', 'pub_date')
 
 
 class VerificationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     confirmation_code = serializers.CharField(max_length=250)
+

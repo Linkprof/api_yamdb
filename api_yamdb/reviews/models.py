@@ -1,4 +1,11 @@
+
+from django.contrib.auth import get_user_model
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.conf import settings
+
+
+User = get_user_model()
 
 
 class Categories(models.Model):
@@ -7,6 +14,7 @@ class Categories(models.Model):
     slug = models.SlugField(max_length=50, unique=True,
                             verbose_name='slug категории')
 
+
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
@@ -14,7 +22,7 @@ class Categories(models.Model):
     def __str__(self):
         return self.name
 
-
+      
 class Genres(models.Model):
     '''Категории жанров'''
     name = models.CharField(max_length=256, verbose_name='Hазвание жанра')
@@ -49,3 +57,71 @@ class Titles(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Reviews(models.Model):
+    '''Модель отзывов о произведениях'''
+    title = models.ForeignKey(
+        Titles,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='Произведение',
+    )
+    text = models.TextField(
+        verbose_name='Текст отзыва',
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='Автор',
+    )
+    score = models.PositiveSmallIntegerField(
+        verbose_name='Оценка',
+        validators=[
+            MinValueValidator(1, 'Оценка не может быть меньше 1.'),
+            MaxValueValidator(10, 'Оценка не может быть выше 10.')
+        ]
+    )
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата публикации'
+    )
+
+    class Meta:
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
+
+    def __str__(self):
+        return f'{self.author} - {self.text[settings.NUMBER_OF_POSTS]}'
+
+
+class Comments(models.Model):
+    '''Модель комментариев к отзывам.'''
+    review = models.ForeignKey(
+        Reviews,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name='Обзор',
+    )
+    text = models.TextField(
+        verbose_name='Текст комментария',
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name='Автор',
+    )
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        verbose_name='Дата публикации',
+    )
+
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+
+    def __str__(self):
+        return f'{self.author} - {self.text[settings.NUMBER_OF_POSTS]}'

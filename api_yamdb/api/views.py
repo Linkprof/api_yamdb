@@ -10,11 +10,13 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework_simplejwt.tokens import AccessToken
 
 from api.permissions import IsAdmin
-from users.models import User
+from users.models import User, Reviews, Titles
 from api.serializers import (
     RegistrationSerializer,
     UserSerializer,
     VerificationSerializer,
+    CommentsSerializer,
+    ReviewsSerializer,
 )
 
 
@@ -92,3 +94,46 @@ def get_token(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     token = AccessToken.for_user(user)
     return Response(data={'token': str(token)}, status=status.HTTP_200_OK)
+
+
+class ReviewsViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewsSerializer
+    permission_classes = ('''IsAdminModeratorOwnerOrReadOnly,''')
+
+    def create_or_update(self, serializer):
+        title = self.get_title()
+        serializer.save(author=self.request.user, title=title)
+        ratings = Reviews.objects.filter(title=title.id)
+        title.rating = round(mean([r.score for r in ratings]))
+        title.save()
+
+    def get_title(self):
+        title_id = self.kwargs.get("title_id")
+        return get_object_or_404(Titles, id=title_id)
+
+    def get_queryset(self):
+        title = self.get_title()
+        return title.reviews.all()
+
+    def perform_create(self, serializer):
+        self.create_or_update(serializer)
+
+
+
+class CommentsViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentsSerializer
+    permission_classes = ('''IsAdminModeratorOwnerOrReadOnly,''')
+
+    def get_review(self):
+        title_id = self.kwargs.get("title_id")
+        title = get_object_or_404(Titles, id=title_id)
+        review_id = self.kwargs.get("review_id")
+        return get_object_or_404(title.reviews, id=review_id)
+
+    def get_queryset(self):
+        title = self.get_review()
+        return title.comments.all()
+
+    def perform_create(self, serializer):
+        review = self.get_review()
+        serializer.save(author=self.request.user, review=review)
