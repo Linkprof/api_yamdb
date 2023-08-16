@@ -1,12 +1,10 @@
+from django.shortcuts import get_object_or_404
+from django.core.validators import (RegexValidator)
 from rest_framework import serializers
-from django.core.validators import (
-    MaxValueValidator,
-    MinValueValidator,
-    RegexValidator)
+from rest_framework.validators import ValidationError
 
+from reviews.models import Categories, Comments, Genres, Review, Title
 from users.models import User
-from reviews.models import Titles, Comments, Reviews
-from reviews.models import Categories, Genres, Titles
 
 VALID_NAME = RegexValidator(r'^[\w.@+-]+\Z')
 
@@ -15,14 +13,14 @@ class CategoriesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Categories
-        fields = '__all__'
+        exclude = ('id', )
 
 
 class GenresSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Genres
-        fields = '__all__'
+        exclude = ('id', )
 
 
 class TitlesSerializer(serializers.ModelSerializer):
@@ -31,9 +29,20 @@ class TitlesSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(slug_field='slug',
                                          queryset=Genres.objects.all(),
                                          many=True)
+    rating = serializers.IntegerField(required=False)
 
     class Meta:
-        model = Titles
+        model = Title
+        fields = '__all__'
+
+
+class ReadTitleSerializer(serializers.ModelSerializer):
+    category = CategoriesSerializer(read_only=True)
+    genre = GenresSerializer(read_only=True, many=True)
+    rating = serializers.IntegerField(required=False)
+
+    class Meta:
+        model = Title
         fields = '__all__'
 
 
@@ -82,16 +91,21 @@ class ReviewsSerializer(serializers.ModelSerializer):
         read_only=True,
         slug_field='username'
     )
-    score = serializers.IntegerField(
-        validators=(
-            MinValueValidator(1, 'Оценка не может быть меньше 1.'),
-            MaxValueValidator(10, 'Оценка не может быть выше 10.')
-        )
-    )
 
     class Meta:
-        model = Reviews
+        model = Review
         fields = ('id', 'author', 'text', 'score', 'pub_date')
+
+    def validate(self, data):
+        request = self.context['request']
+        title = get_object_or_404(
+            Title,
+            pk=self.context['view'].kwargs.get('title_id'))
+        if request.method == 'POST':
+            if Review.objects.filter(title=title,
+                                     author=request.user).exists():
+                raise ValidationError('No!')
+        return data
 
 
 class VerificationSerializer(serializers.Serializer):

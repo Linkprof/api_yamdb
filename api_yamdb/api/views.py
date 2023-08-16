@@ -1,33 +1,28 @@
-from django.db import IntegrityError
-from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
-from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status, viewsets, filters
-from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework_simplejwt.tokens import AccessToken
-from django.shortcuts import get_object_or_404
-from rest_framework import filters, viewsets
 from statistics import mean
 
-from reviews.models import Categories, Genres, Titles
-from api.serializers import (CategoriesSerializer,
-                             GenresSerializer,
-                             TitlesSerializer)
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.db.models import Avg
+from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, mixins, status, viewsets
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import AccessToken
 
-
-from api.permissions import IsAdmin
+from api.filters import CustomFilter
+from api.permissions import (IsAdmin,
+                             ReadOrIsAdminOnly,
+                             IsAdminModeratorOwnerOrReadOnly)
+from api.serializers import (CategoriesSerializer, CommentsSerializer,
+                             GenresSerializer, RegistrationSerializer,
+                             ReviewsSerializer, ReadTitleSerializer,
+                             TitlesSerializer, UserSerializer,
+                             VerificationSerializer)
+from reviews.models import Categories, Genres, Review, Title
 from users.models import User
-from reviews.models import Reviews, Titles
-from api.serializers import (
-    RegistrationSerializer,
-    UserSerializer,
-    VerificationSerializer,
-    CommentsSerializer,
-    ReviewsSerializer,
-)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -106,39 +101,59 @@ def get_token(request):
     return Response(data={'token': str(token)}, status=status.HTTP_200_OK)
 
 
-class CategoriesViewSet(viewsets.ReadOnlyModelViewSet):
+class TitlesViewSet(viewsets.ModelViewSet):
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')
+    )
+    permission_classes = [ReadOrIsAdminOnly]
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = CustomFilter
+    ordering = ('name',)
+
+    def get_serializer_class(self):
+        if self.request.method in ['POST', 'PATCH']:
+            return TitlesSerializer
+        return ReadTitleSerializer
+
+
+class CategoriesViewSet(mixins.CreateModelMixin,
+                        mixins.DestroyModelMixin,
+                        mixins.ListModelMixin,
+                        viewsets.GenericViewSet):
     queryset = Categories.objects.all()
     serializer_class = CategoriesSerializer
+    permission_classes = [ReadOrIsAdminOnly]
     filter_backends = (filters.SearchFilter, )
     search_fields = ('name',)
+    lookup_field = 'slug'
 
 
-class GenresViewSet(viewsets.ModelViewSet):
+class GenresViewSet(mixins.CreateModelMixin,
+                    mixins.DestroyModelMixin,
+                    mixins.ListModelMixin,
+                    viewsets.GenericViewSet):
     queryset = Genres.objects.all()
     serializer_class = GenresSerializer
+    permission_classes = [ReadOrIsAdminOnly]
     filter_backends = (filters.SearchFilter, )
     search_fields = ('name',)
-
-
-class TitlesViewSet(viewsets.ModelViewSet):
-    queryset = Titles.objects.all()
-    serializer_class = TitlesSerializer
+    lookup_field = 'slug'
 
 
 class ReviewsViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewsSerializer
-    permission_classes = ('''IsAdminModeratorOwnerOrReadOnly,''')
+    permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
 
     def create_or_update(self, serializer):
         title = self.get_title()
         serializer.save(author=self.request.user, title=title)
-        ratings = Reviews.objects.filter(title=title.id)
+        ratings = Review.objects.filter(title=title.id)
         title.rating = round(mean([r.score for r in ratings]))
         title.save()
 
     def get_title(self):
         title_id = self.kwargs.get("title_id")
-        return get_object_or_404(Titles, id=title_id)
+        return get_object_or_404(Title, id=title_id)
 
     def get_queryset(self):
         title = self.get_title()
@@ -150,11 +165,11 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 
 class CommentsViewSet(viewsets.ModelViewSet):
     serializer_class = CommentsSerializer
-    permission_classes = ('''IsAdminModeratorOwnerOrReadOnly,''')
+    permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
 
     def get_review(self):
         title_id = self.kwargs.get("title_id")
-        title = get_object_or_404(Titles, id=title_id)
+        title = get_object_or_404(Title, id=title_id)
         review_id = self.kwargs.get("review_id")
         return get_object_or_404(title.reviews, id=review_id)
 
