@@ -2,6 +2,7 @@ from statistics import mean
 
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.db.models import Avg
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -17,7 +18,7 @@ from api.permissions import (IsAdmin,
                              IsAdminModeratorOwnerOrReadOnly)
 from api.serializers import (CategoriesSerializer, CommentsSerializer,
                              GenresSerializer, RegistrationSerializer,
-                             ReviewsSerializer, TitleSerializer,
+                             ReviewsSerializer, ReadTitleSerializer,
                              TitlesSerializer, UserSerializer,
                              VerificationSerializer)
 from reviews.models import Categories, Genres, Review, Title
@@ -101,7 +102,9 @@ def get_token(request):
 
 
 class TitlesViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')
+    )
     permission_classes = [ReadOrIsAdminOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = CustomFilter
@@ -110,7 +113,7 @@ class TitlesViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method in ['POST', 'PATCH']:
             return TitlesSerializer
-        return TitleSerializer
+        return ReadTitleSerializer
 
 
 class CategoriesViewSet(mixins.CreateModelMixin,
