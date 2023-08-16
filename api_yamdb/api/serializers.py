@@ -1,12 +1,9 @@
+from django.core.validators import (MaxValueValidator, MinValueValidator,
+                                    RegexValidator)
 from rest_framework import serializers
-from django.core.validators import (
-    MaxValueValidator,
-    MinValueValidator,
-    RegexValidator)
 
+from reviews.models import Categories, Comments, Genres, Reviews, Titles
 from users.models import User
-from reviews.models import Titles, Comments, Reviews
-from reviews.models import Categories, Genres, Titles
 
 VALID_NAME = RegexValidator(r'^[\w.@+-]+\Z')
 
@@ -15,14 +12,14 @@ class CategoriesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Categories
-        fields = '__all__'
+        exclude = ('id', )
 
 
 class GenresSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Genres
-        fields = '__all__'
+        exclude = ('id', )
 
 
 class TitlesSerializer(serializers.ModelSerializer):
@@ -31,6 +28,15 @@ class TitlesSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(slug_field='slug',
                                          queryset=Genres.objects.all(),
                                          many=True)
+
+    class Meta:
+        model = Titles
+        fields = '__all__'
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    category = CategoriesSerializer(read_only=True)
+    genre = GenresSerializer(read_only=True, many=True)
 
     class Meta:
         model = Titles
