@@ -32,7 +32,7 @@ class Genres(models.Model):
         return self.name
 
 
-class Titles(models.Model):
+class Title(models.Model):
     '''Произведения, к которым пишут отзывы
     (определённый фильм, книга или песенка)'''
     name = models.CharField(max_length=256,
@@ -54,10 +54,10 @@ class Titles(models.Model):
         return self.name
 
 
-class Reviews(models.Model):
+class Review(models.Model):
     '''Модель отзывов о произведениях'''
     title = models.ForeignKey(
-        Titles,
+        Title,
         on_delete=models.CASCADE,
         related_name='reviews',
         verbose_name='Произведение',
@@ -86,6 +86,12 @@ class Reviews(models.Model):
     class Meta:
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('author', 'title'),
+                name='Unique person constraint',
+            ),
+        )
 
     def __str__(self):
         return f'{self.author} - {self.text[settings.NUMBER_OF_POSTS]}'
@@ -94,7 +100,7 @@ class Reviews(models.Model):
 class Comments(models.Model):
     '''Модель комментариев к отзывам.'''
     review = models.ForeignKey(
-        Reviews,
+        Review,
         on_delete=models.CASCADE,
         related_name='comments',
         verbose_name='Обзор',

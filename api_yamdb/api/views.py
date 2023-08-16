@@ -7,19 +7,20 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from api.filters import CustomFilter
-from api.permissions import IsAdmin, ReadOrIsAdminOnly
+from api.permissions import (IsAdmin,
+                             ReadOrIsAdminOnly,
+                             IsAdminModeratorOwnerOrReadOnly)
 from api.serializers import (CategoriesSerializer, CommentsSerializer,
                              GenresSerializer, RegistrationSerializer,
                              ReviewsSerializer, TitleSerializer,
                              TitlesSerializer, UserSerializer,
                              VerificationSerializer)
-from reviews.models import Categories, Genres, Reviews, Titles
+from reviews.models import Categories, Genres, Review, Title
 from users.models import User
 
 
@@ -100,9 +101,8 @@ def get_token(request):
 
 
 class TitlesViewSet(viewsets.ModelViewSet):
-    queryset = Titles.objects.all()
+    queryset = Title.objects.all()
     permission_classes = [ReadOrIsAdminOnly]
-    pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = CustomFilter
     ordering = ('name',)
@@ -123,7 +123,6 @@ class CategoriesViewSet(mixins.CreateModelMixin,
     filter_backends = (filters.SearchFilter, )
     search_fields = ('name',)
     lookup_field = 'slug'
-    pagination_class = PageNumberPagination
 
 
 class GenresViewSet(mixins.CreateModelMixin,
@@ -136,23 +135,22 @@ class GenresViewSet(mixins.CreateModelMixin,
     filter_backends = (filters.SearchFilter, )
     search_fields = ('name',)
     lookup_field = 'slug'
-    pagination_class = PageNumberPagination
 
 
 class ReviewsViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewsSerializer
-    permission_classes = ('''IsAdminModeratorOwnerOrReadOnly,''')
+    permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
 
     def create_or_update(self, serializer):
         title = self.get_title()
         serializer.save(author=self.request.user, title=title)
-        ratings = Reviews.objects.filter(title=title.id)
+        ratings = Review.objects.filter(title=title.id)
         title.rating = round(mean([r.score for r in ratings]))
         title.save()
 
     def get_title(self):
         title_id = self.kwargs.get("title_id")
-        return get_object_or_404(Titles, id=title_id)
+        return get_object_or_404(Title, id=title_id)
 
     def get_queryset(self):
         title = self.get_title()
@@ -164,11 +162,11 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 
 class CommentsViewSet(viewsets.ModelViewSet):
     serializer_class = CommentsSerializer
-    permission_classes = ('''IsAdminModeratorOwnerOrReadOnly,''')
+    permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
 
     def get_review(self):
         title_id = self.kwargs.get("title_id")
-        title = get_object_or_404(Titles, id=title_id)
+        title = get_object_or_404(Title, id=title_id)
         review_id = self.kwargs.get("review_id")
         return get_object_or_404(title.reviews, id=review_id)
 
