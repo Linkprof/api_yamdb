@@ -67,12 +67,12 @@ class RegistrationSerializer(serializers.Serializer):
         max_length=150,
         validators=[VALID_NAME],)
 
-    def validate_username(self, value):
-        if value == 'me':
+    def validate_username(self, data):
+        if data == 'me':
             raise serializers.ValidationError(
                 'Нельзя использовать имя "me" для регистрации.'
             )
-        return value
+        return super().validate(data)
 
 
 class CommentsSerializer(serializers.ModelSerializer):
@@ -104,8 +104,8 @@ class ReviewsSerializer(serializers.ModelSerializer):
         if request.method == 'POST':
             if Review.objects.filter(title=title,
                                      author=request.user).exists():
-                raise ValidationError('No!')
-        return data
+                raise ValidationError('Нельзя оставить отзыв дважды!')
+        return super().validate(data)
 
 
 class VerificationSerializer(serializers.Serializer):
