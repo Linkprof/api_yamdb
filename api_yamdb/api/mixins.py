@@ -1,6 +1,7 @@
 from rest_framework import filters, mixins, viewsets
 from api.permissions import ReadOrIsAdminOnly
 
+
 class CustomViewSet(mixins.CreateModelMixin,
                     mixins.DestroyModelMixin,
                     mixins.ListModelMixin,
