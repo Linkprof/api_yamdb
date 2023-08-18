@@ -45,12 +45,9 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(
                 request.user, data=request.data, partial=True
             )
-            if not (serializer.is_valid()):
-                return Response(
-                    serializer.errors, status=status.HTTP_400_BAD_REQUEST
-                )
+            serializer.is_valid(raise_exception=True)
             if serializer.validated_data.get('role'):
-                if request.user.role != 'admin' or not (
+                if request.user.role != request.user.is_admin or not (
                     request.user.is_superuser
                 ):
                     serializer.validated_data['role'] = request.user.role
@@ -90,8 +87,7 @@ def signup(request):
 @permission_classes([AllowAny])
 def get_token(request):
     serializer = VerificationSerializer(data=request.data)
-    if not (serializer.is_valid()):
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
     username = request.data.get('username')
     confirmation_code = request.data.get('confirmation_code')
     user = get_object_or_404(User, username=username)
@@ -148,7 +144,7 @@ class ReviewsViewSet(viewsets.ModelViewSet):
         title = self.get_title()
         serializer.save(author=self.request.user, title=title)
         ratings = Review.objects.filter(title=title.id)
-        title.rating = round(mean([r.score for r in ratings]))
+        title.rating = round(mean([rating.score for rating in ratings]))
         title.save()
 
     def get_title(self):
