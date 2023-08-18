@@ -23,9 +23,6 @@ class IsAdmin(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return (
-            # Если пользователь не авторизован,
-            # он не проходит проверку is_admin
-            # как реализовать без is_authenticated?
             request.user.is_authenticated and (
                 request.user.is_admin or request.user.is_superuser
             )
