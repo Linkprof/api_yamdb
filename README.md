@@ -1,4 +1,4 @@
-# API для Yatube
+# Проект YaMDb
 `Python 3.9.10`
 `Django 3.2.16`
 ## Авторы
