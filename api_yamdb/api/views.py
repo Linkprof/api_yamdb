@@ -6,13 +6,14 @@ from django.db.models import Avg
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from api.filters import CustomFilter
+from api.mixins import CustomViewSet
 from api.permissions import (IsAdmin,
                              ReadOrIsAdminOnly,
                              IsAdminModeratorOwnerOrReadOnly)
@@ -112,28 +113,14 @@ class TitlesViewSet(viewsets.ModelViewSet):
         return ReadTitleSerializer
 
 
-class CategoriesViewSet(mixins.CreateModelMixin,
-                        mixins.DestroyModelMixin,
-                        mixins.ListModelMixin,
-                        viewsets.GenericViewSet):
+class CategoriesViewSet(CustomViewSet):
     queryset = Categories.objects.all()
     serializer_class = CategoriesSerializer
-    permission_classes = [ReadOrIsAdminOnly]
-    filter_backends = (filters.SearchFilter, )
-    search_fields = ('name',)
-    lookup_field = 'slug'
 
 
-class GenresViewSet(mixins.CreateModelMixin,
-                    mixins.DestroyModelMixin,
-                    mixins.ListModelMixin,
-                    viewsets.GenericViewSet):
+class GenresViewSet(CustomViewSet):
     queryset = Genres.objects.all()
     serializer_class = GenresSerializer
-    permission_classes = [ReadOrIsAdminOnly]
-    filter_backends = (filters.SearchFilter, )
-    search_fields = ('name',)
-    lookup_field = 'slug'
 
 
 class ReviewsViewSet(viewsets.ModelViewSet):
