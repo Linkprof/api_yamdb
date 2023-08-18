@@ -6,13 +6,14 @@ from django.db.models import Avg
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from api.filters import CustomFilter
+from api.mixins import CustomViewSet
 from api.permissions import (IsAdmin,
                              ReadOrIsAdminOnly,
                              IsAdminModeratorOwnerOrReadOnly)
@@ -45,12 +46,9 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(
                 request.user, data=request.data, partial=True
             )
-            if not (serializer.is_valid()):
-                return Response(
-                    serializer.errors, status=status.HTTP_400_BAD_REQUEST
-                )
+            serializer.is_valid(raise_exception=True)
             if serializer.validated_data.get('role'):
-                if request.user.role != 'admin' or not (
+                if request.user.role != request.user.is_admin or not (
                     request.user.is_superuser
                 ):
                     serializer.validated_data['role'] = request.user.role
@@ -90,8 +88,7 @@ def signup(request):
 @permission_classes([AllowAny])
 def get_token(request):
     serializer = VerificationSerializer(data=request.data)
-    if not (serializer.is_valid()):
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
     username = request.data.get('username')
     confirmation_code = request.data.get('confirmation_code')
     user = get_object_or_404(User, username=username)
@@ -116,28 +113,14 @@ class TitlesViewSet(viewsets.ModelViewSet):
         return ReadTitleSerializer
 
 
-class CategoriesViewSet(mixins.CreateModelMixin,
-                        mixins.DestroyModelMixin,
-                        mixins.ListModelMixin,
-                        viewsets.GenericViewSet):
+class CategoriesViewSet(CustomViewSet):
     queryset = Categories.objects.all()
     serializer_class = CategoriesSerializer
-    permission_classes = [ReadOrIsAdminOnly]
-    filter_backends = (filters.SearchFilter, )
-    search_fields = ('name',)
-    lookup_field = 'slug'
 
 
-class GenresViewSet(mixins.CreateModelMixin,
-                    mixins.DestroyModelMixin,
-                    mixins.ListModelMixin,
-                    viewsets.GenericViewSet):
+class GenresViewSet(CustomViewSet):
     queryset = Genres.objects.all()
     serializer_class = GenresSerializer
-    permission_classes = [ReadOrIsAdminOnly]
-    filter_backends = (filters.SearchFilter, )
-    search_fields = ('name',)
-    lookup_field = 'slug'
 
 
 class ReviewsViewSet(viewsets.ModelViewSet):
@@ -148,7 +131,7 @@ class ReviewsViewSet(viewsets.ModelViewSet):
         title = self.get_title()
         serializer.save(author=self.request.user, title=title)
         ratings = Review.objects.filter(title=title.id)
-        title.rating = round(mean([r.score for r in ratings]))
+        title.rating = round(mean([rating.score for rating in ratings]))
         title.save()
 
     def get_title(self):
